@@ -1,6 +1,6 @@
 
-#ifndef OTCAFER_TESTING_H
-#define OTCAFER_TESTING_H
+#ifndef REFACTO_TESTING_H
+#define REFACTO_TESTING_H
 
 namespace Renamed {
     namespace Testing2::Renamed2 {
@@ -8,7 +8,8 @@ namespace Renamed {
     }
 }
 
-#endif //OTCAFER_TESTING_H
+#endif //REFACTO_TESTING_H
+
 
 
 

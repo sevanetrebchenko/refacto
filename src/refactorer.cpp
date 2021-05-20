@@ -30,6 +30,8 @@ namespace Refacto {
         std::vector<std::string> files;
         std::fstream fileReader;
 
+        std::string path = std::filesystem::current_path().string();
+
         // Get all files to process from directory.
         for (const std::string &directory : _directories) {
             try {
@@ -40,27 +42,55 @@ namespace Refacto {
                 continue;
             }
 
-            for (const std::string &filename : files) {
+            for (unsigned i = 0; i < files.size(); ++i) {
+                const std::string& filename = files[i];
                 std::string native = ConvertToNativeSeparators(filename);
+                bool invalid = false;
 
+                // Replace include guards.
                 for (const std::pair<const std::string, std::string> &data : _includeGuards) {
                     try {
-                        FindAndReplace(native, { "#ifndef", "#define", "#endif" }, data); // Replace include guards.
+                        FindAndReplace(native, { "#ifndef", "#define", "#endif" }, data);
                     }
-                    catch (std::runtime_error &exception) {
+                    catch (std::runtime_error& exception) {
                         std::cerr << exception.what() << std::endl;
+                        invalid = true;
                         break;
                     }
                 }
 
+                if (invalid) {
+                    files.erase(files.begin() + i);
+
+                    // Don't skip files.
+                    if (i > 0) {
+                        --i;
+                    }
+
+                    continue;
+                }
+
+                // Replace namespace names.
                 for (const std::pair<const std::string, std::string> &data : _namespaces) {
                     try {
-                        FindAndReplace(native, { "namespace" }, data); // Replace namespace names.
+                        FindAndReplace(native, { "namespace" }, data);
                     }
-                    catch (std::runtime_error &exception) {
+                    catch (std::runtime_error& exception) {
                         std::cerr << exception.what() << std::endl;
+                        invalid = true;
                         break;
                     }
+                }
+
+                if (invalid) {
+                    files.erase(files.begin() + i);
+
+                    // Don't skip files.
+                    if (i > 0) {
+                        --i;
+                    }
+
+                    continue;
                 }
             }
         }
@@ -68,10 +98,11 @@ namespace Refacto {
 
     void Refactorer::FindAndReplace(const std::string &filepath, const std::initializer_list<std::string> &tokens, const std::pair<const std::string, std::string> &mapping) const {
         // Attempt to open the file.
-        std::fstream fileStream(filepath);
+        std::ifstream fileStream(filepath);
         if (!fileStream.is_open()) {
-            throw std::runtime_error("File: " + GetAssetName(filepath) + " does not exist.");
+            throw std::runtime_error("File: " + filepath + " does not exist or cannot be opened. Removing from processing list.");
         }
+
         const std::string &from = mapping.first;
         const std::string &to = mapping.second;
         std::size_t length = from.size();
@@ -81,8 +112,11 @@ namespace Refacto {
         std::stringstream file;
 
         // Process file.
-        while (!fileStream.eof()) {
+        while (true) {
             std::getline(fileStream, line);
+            if (fileStream.eof()) {
+                break;
+            }
 
             std::size_t tokenIndex;
 

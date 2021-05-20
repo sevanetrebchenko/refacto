@@ -7,7 +7,7 @@ int main(int argc, char** argv) {
     Refacto::Refactorer refactorer;
 
     refactorer.AddDirectory("test");
-    refactorer.AddIncludeGuardMapping("REFACTO", "OTCAFER");
+    refactorer.AddIncludeGuardMapping("ASDF", "REFACTO");
     refactorer.AddNamespaceMapping("Testing1", "Renamed");
     refactorer.AddNamespaceMapping("Nested", "Renamed2");
 
