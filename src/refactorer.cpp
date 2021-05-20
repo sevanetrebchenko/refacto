@@ -45,8 +45,17 @@ namespace Refacto {
 
                 for (const std::pair<const std::string, std::string> &data : _includeGuards) {
                     try {
-                        FindAndReplace(native, {"#ifndef", "#define", "#endif"}, data); // Replace include guards.
-                        FindAndReplace(native, {"namespace"}, data); // Replace namespace.
+                        FindAndReplace(native, { "#ifndef", "#define", "#endif" }, data); // Replace include guards.
+                    }
+                    catch (std::runtime_error &exception) {
+                        std::cerr << exception.what() << std::endl;
+                        break;
+                    }
+                }
+
+                for (const std::pair<const std::string, std::string> &data : _namespaces) {
+                    try {
+                        FindAndReplace(native, { "namespace" }, data); // Replace namespace names.
                     }
                     catch (std::runtime_error &exception) {
                         std::cerr << exception.what() << std::endl;
@@ -57,8 +66,7 @@ namespace Refacto {
         }
     }
 
-    void Refactorer::FindAndReplace(const std::string &filepath, const std::initializer_list<std::string> &tokens,
-                                    const std::pair<const std::string, std::string> &mapping) const {
+    void Refactorer::FindAndReplace(const std::string &filepath, const std::initializer_list<std::string> &tokens, const std::pair<const std::string, std::string> &mapping) const {
         // Attempt to open the file.
         std::fstream fileStream(filepath);
         if (!fileStream.is_open()) {
@@ -66,9 +74,9 @@ namespace Refacto {
         }
         const std::string &from = mapping.first;
         const std::string &to = mapping.second;
+        std::size_t length = from.size();
 
         std::string line;
-        std::string token;
         std::stringstream parser;
         std::stringstream file;
 
@@ -76,44 +84,38 @@ namespace Refacto {
         while (!fileStream.eof()) {
             std::getline(fileStream, line);
 
-            // Reset parser (eof bit).
-            parser.clear();
-            parser.str(line);
+            std::size_t tokenIndex;
 
-            while (parser >> token) {
-                bool found = false;
-                for (const std::string &test : tokens) {
-                    if (token == test) {
-                        // Found include guard.
-                        found = true;
+            for (const std::string& tok : tokens) {
+                tokenIndex = 0; // Reset for each token.
+
+                while (true) {
+                    // Get substring location.
+                    tokenIndex = line.find(tok, tokenIndex);
+
+                    if (tokenIndex == std::string::npos) {
                         break;
                     }
-                }
 
-                if (found) {
-                    file << token << std::endl;
+                    // Found token, search for mapping.
+                    tokenIndex += tok.size();
+                    std::size_t mappingIndex = tokenIndex; // Start searching at the end of the found token.
 
-                    parser >> token; // Get include guard name.
-
-                    std::size_t index = 0;
                     while (true) {
-                        // Get substring location.
-                        index = token.find(from, index);
-                        if (index == std::string::npos) {
-                            // Substring not found in this token.
+                        mappingIndex = line.find(from, mappingIndex);
+                        if (mappingIndex == std::string::npos) {
                             break;
                         }
 
-                        // Make replacement.
-                        std::size_t length = from.size();
-
-                        token.replace(index, length, to);
-                        index += length;
+                        // Token exists, replace it.
+                        line.replace(mappingIndex, length, to);
+                        mappingIndex += length;
+                        tokenIndex = mappingIndex; // Update next search location.
                     }
                 }
-
-                file << token << std::endl;
             }
+
+            file << line << std::endl;
         }
 
         fileStream.close();

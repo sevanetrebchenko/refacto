@@ -1,11 +1,14 @@
 
-#ifndef REFACTO_TESTING_H
-#define REFACTO_TESTING_H
+#ifndef OTCAFER_TESTING_H
+#define OTCAFER_TESTING_H
 
-namespace Testing1 {
-    namespace Testing2::Nested {
-
+namespace Renamed {
+    namespace Testing2::Renamed2 {
+        haaheheh
     }
 }
 
-#endif //REFACTO_TESTING_H
+#endif //OTCAFER_TESTING_H
+
+
+
